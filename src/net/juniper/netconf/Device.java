@@ -7,24 +7,25 @@
 
 package net.juniper.netconf;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-
 import ch.ethz.ssh2.Connection;
 import ch.ethz.ssh2.Session;
 import ch.ethz.ssh2.StreamGobbler;
+import net.juniper.netconf.exception.CommitException;
+import net.juniper.netconf.exception.LoadException;
+import net.juniper.netconf.exception.NetconfException;
+import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-
-import org.w3c.dom.Document;
-import org.xml.sax.SAXException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A <code>Device</code> is used to define a Netconf server.
@@ -42,7 +43,7 @@ import org.xml.sax.SAXException;
  */
 public class Device {
 
-    private static final int DEFAULT_TIMEOUT = 5000;
+    private final static int DEFAULT_TIMEOUT = 5000;
 
     private String hostName;
     private String userName;
@@ -51,7 +52,7 @@ public class Device {
     private String pemKeyFile;
     private boolean connectionOpen;
     private boolean keyBasedAuthentication;
-    private Connection NetconfConn;
+    private Connection netconfConn;
     private int port;
     private int timeout;
     private DocumentBuilder builder;
@@ -88,7 +89,7 @@ public class Device {
      * @param pemKeyFile path of the file containing RSA/DSA private key, in PEM
      *                   format. For user-password based authentication, let this be
      *                   null.
-     * @throws net.juniper.netconf.NetconfException
+     * @throws NetconfException
      * @throws javax.xml.parsers.ParserConfigurationException
      */
     public Device(String hostName, String userName, String password,
@@ -123,7 +124,7 @@ public class Device {
      *                   format. For user-password based authentication, let this be
      *                   null.
      * @param port       port number to establish Netconf session over SSH-2.
-     * @throws net.juniper.netconf.NetconfException
+     * @throws NetconfException
      * @throws javax.xml.parsers.ParserConfigurationException
      */
     public Device(String hostName, String userName, String password,
@@ -158,11 +159,11 @@ public class Device {
      *                     format. For user-password based authentication, let this be
      *                     null.
      * @param capabilities the client capabilities to be advertised to Netconf server.
-     * @throws net.juniper.netconf.NetconfException
+     * @throws NetconfException
      * @throws javax.xml.parsers.ParserConfigurationException
      */
     public Device(String hostName, String userName, String password,
-                  String pemKeyFile, ArrayList capabilities) throws
+                  String pemKeyFile, List<String> capabilities) throws
             NetconfException, ParserConfigurationException {
         this.hostName = hostName;
         this.userName = userName;
@@ -194,11 +195,11 @@ public class Device {
      *                     null.
      * @param port         port number to establish Netconf session over SSH-2.
      * @param capabilities the client capabilities to be advertised to Netconf server.
-     * @throws net.juniper.netconf.NetconfException
+     * @throws NetconfException
      * @throws javax.xml.parsers.ParserConfigurationException
      */
     public Device(String hostName, String userName, String password,
-                  String pemKeyFile, int port, ArrayList capabilities) throws
+                  String pemKeyFile, int port, List<String> capabilities) throws
             NetconfException, ParserConfigurationException {
         this.hostName = hostName;
         this.userName = userName;
@@ -217,18 +218,16 @@ public class Device {
     }
 
     private String defaultHelloRPC() {
-        ArrayList defaultCap = getDefaultClientCapabilities();
+        List<String> defaultCap = getDefaultClientCapabilities();
         return createHelloRPC(defaultCap);
     }
 
-    private String createHelloRPC(ArrayList capabilities) {
-        StringBuffer helloRPC = new StringBuffer();
-        helloRPC.append("<hello>\n");
-        helloRPC.append("<capabilities>\n");
-        Iterator capIter = capabilities.iterator();
-        while (capIter.hasNext()) {
-            String capability = (String) capIter.next();
-            helloRPC.append("<capability>" + capability + "</capability>\n");
+    private String createHelloRPC(List<String> capabilities) {
+        StringBuilder helloRPC = new StringBuilder("<hello>\n<capabilities>\n");
+        for (String capability : capabilities) {
+            helloRPC.append("<capability>")
+                    .append(capability)
+                    .append("</capability>\n");
         }
         helloRPC.append("</capabilities>\n");
         helloRPC.append("</hello>\n");
@@ -240,13 +239,12 @@ public class Device {
     /**
      * Connect to the Device, and establish a default NETCONF session.
      *
-     * @throws net.juniper.netconf.NetconfException
+     * @throws NetconfException
      */
     public void connect() throws NetconfException {
         if (hostName == null || userName == null || (password == null &&
                 pemKeyFile == null)) {
-            throw new NetconfException("Login parameters of Device can't be " +
-                    "null.");
+            throw new NetconfException("Login parameters of Device can't be null.");
         }
         defaultSession = this.createNetconfSession();
     }
@@ -322,7 +320,7 @@ public class Device {
      *
      * @param capabilities Client capabilities to be advertised to the Netconf server.
      */
-    public void setCapabilities(ArrayList capabilities) throws NetconfException {
+    public void setCapabilities(List capabilities) throws NetconfException {
         if (capabilities == null) {
             throw new IllegalArgumentException("Client capabilities cannot be "
                     + "null");
@@ -360,15 +358,15 @@ public class Device {
      * Create a new Netconf session.
      *
      * @return NetconfSession
-     * @throws net.juniper.netconf.NetconfException
+     * @throws NetconfException
      */
     public NetconfSession createNetconfSession() throws NetconfException {
         Session normalSession;
         NetconfSession netconfSess;
         if (!connectionOpen) {
             try {
-                NetconfConn = new Connection(hostName, port);
-                NetconfConn.connect(null, timeout, 0);
+                netconfConn = new Connection(hostName, port);
+                netconfConn.connect(null, timeout, 0);
             } catch (Exception e) {
                 throw new NetconfException(e.getMessage());
             }
@@ -376,10 +374,10 @@ public class Device {
             try {
                 if (keyBasedAuthentication) {
                     File keyFile = new File(pemKeyFile);
-                    isAuthenticated = NetconfConn.authenticateWithPublicKey
+                    isAuthenticated = netconfConn.authenticateWithPublicKey
                             (userName, keyFile, password);
                 } else {
-                    isAuthenticated = NetconfConn.authenticateWithPassword
+                    isAuthenticated = netconfConn.authenticateWithPassword
                             (userName, password);
                 }
             } catch (IOException e) {
@@ -391,7 +389,7 @@ public class Device {
             connectionOpen = true;
         }
         try {
-            normalSession = NetconfConn.openSession();
+            normalSession = netconfConn.openSession();
             normalSession.startSubSystem("netconf");
             netconfSess = new NetconfSession(normalSession, helloRpc, builder);
         } catch (IOException e) {
@@ -425,7 +423,7 @@ public class Device {
         if (!connectionOpen) {
             return;
         }
-        NetconfConn.close();
+        netconfConn.close();
         connectionOpen = false;
     }
 
@@ -440,26 +438,26 @@ public class Device {
         if (!connectionOpen) {
             return "Could not find open connection.";
         }
-        Session session = NetconfConn.openSession();
+        Session session = netconfConn.openSession();
         session.execCommand(command);
         InputStream stdout;
         BufferedReader bufferReader;
         stdout = new StreamGobbler(session.getStdout());
         bufferReader = new BufferedReader(new InputStreamReader(stdout));
 
-        String reply = "";
+        StringBuilder reply = new StringBuilder();
         while (true) {
-            String line = "";
+            String line;
             try {
                 line = bufferReader.readLine();
             } catch (Exception e) {
                 throw new NetconfException(e.getMessage());
             }
-            if (line == null || line.equals(""))
-                break;
-            reply += line + "\n";
+            if (line == null || line.equals("")) break;
+            reply.append(line)
+                    .append("\n");
         }
-        return reply;
+        return reply.toString();
     }
 
     /**
@@ -476,12 +474,10 @@ public class Device {
         if (!connectionOpen) {
             throw new IOException("Could not find open connection");
         }
-        Session session = NetconfConn.openSession();
+        Session session = netconfConn.openSession();
         session.execCommand(command);
-        InputStream stdout;
-        BufferedReader bufferReader;
-        stdout = new StreamGobbler(session.getStdout());
-        bufferReader = new BufferedReader(new InputStreamReader(stdout));
+        InputStream stdout = new StreamGobbler(session.getStdout());
+        BufferedReader bufferReader = new BufferedReader(new InputStreamReader(stdout));
         return bufferReader;
     }
 
@@ -489,10 +485,10 @@ public class Device {
      * Get the client capabilities that are advertised to the Netconf server
      * by default.
      *
-     * @return Arraylist of default client capabilities.
+     * @return list of default client capabilities.
      */
-    public ArrayList getDefaultClientCapabilities() {
-        ArrayList defaultCap = new ArrayList();
+    public List<String> getDefaultClientCapabilities() {
+        List<String> defaultCap = new ArrayList<String>();
         defaultCap.add("urn:ietf:params:xml:ns:netconf:base:1.0");
         defaultCap.add("urn:ietf:params:xml:ns:netconf:base:1.0#candidate");
         defaultCap.add("urn:ietf:params:xml:ns:netconf:base:1.0#confirmed-commit");
@@ -721,7 +717,7 @@ public class Device {
      *                      &lt;services/&gt;&lt;/system&gt;&lt;/configuration/&gt;"
      *                      will load 'ftp' under the 'systems services' hierarchy.
      * @param loadType      You can choose "merge" or "replace" as the loadType.
-     * @throws net.juniper.netconf.LoadException
+     * @throws LoadException
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
      */
@@ -746,7 +742,7 @@ public class Device {
      *                      }"
      *                      will load 'ftp' under the 'systems services' hierarchy.
      * @param loadType      You can choose "merge" or "replace" as the loadType.
-     * @throws net.juniper.netconf.LoadException
+     * @throws LoadException
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
      */
@@ -768,7 +764,7 @@ public class Device {
      *                      "set system services ftp"
      *                      will load 'ftp' under the 'systems services' hierarchy.
      *                      To load multiple set statements, separate them by '\n' character.
-     * @throws net.juniper.netconf.LoadException
+     * @throws LoadException
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
      */
@@ -789,7 +785,7 @@ public class Device {
      * @param configFile Path name of file containing configuration,in xml format,
      *                   to be loaded.
      * @param loadType   You can choose "merge" or "replace" as the loadType.
-     * @throws net.juniper.netconf.LoadException
+     * @throws LoadException
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
      */
@@ -809,7 +805,7 @@ public class Device {
      * @param configFile Path name of file containing configuration,in xml format,
      *                   to be loaded.
      * @param loadType   You can choose "merge" or "replace" as the loadType.
-     * @throws net.juniper.netconf.LoadException
+     * @throws LoadException
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
      */
@@ -829,7 +825,7 @@ public class Device {
      *
      * @param configFile Path name of file containing configuration,in set format,
      *                   to be loaded.
-     * @throws net.juniper.netconf.LoadException
+     * @throws LoadException
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
      */
@@ -845,7 +841,7 @@ public class Device {
     /**
      * Commit the candidate configuration.
      *
-     * @throws net.juniper.netconf.CommitException
+     * @throws CommitException
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
      */
@@ -863,7 +859,7 @@ public class Device {
      *
      * @param seconds Time in seconds, after which the previous active configuration
      *                is reverted back to.
-     * @throws net.juniper.netconf.CommitException
+     * @throws CommitException
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
      */
@@ -893,8 +889,8 @@ public class Device {
      *                   services/&gt;&lt;/system&gt;&lt;/configuration/&gt;"
      *                   will load 'ftp' under the 'systems services' hierarchy.
      * @param loadType   You can choose "merge" or "replace" as the loadType.
-     * @throws net.juniper.netconf.LoadException
-     * @throws net.juniper.netconf.CommitException
+     * @throws LoadException
+     * @throws CommitException
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
      */

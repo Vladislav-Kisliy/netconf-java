@@ -9,6 +9,9 @@ package net.juniper.netconf;
 
 import ch.ethz.ssh2.Session;
 import ch.ethz.ssh2.StreamGobbler;
+import net.juniper.netconf.exception.CommitException;
+import net.juniper.netconf.exception.LoadException;
+import net.juniper.netconf.exception.NetconfException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -458,7 +461,7 @@ public class NetconfSession {
      *                      services/&gt;&lt;/system&gt;&lt;/configuration/&gt;"
      *                      will load 'ftp' under the 'systems services' hierarchy.
      * @param loadType      You can choose "merge" or "replace" as the loadType.
-     * @throws net.juniper.netconf.LoadException
+     * @throws LoadException
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
      */
@@ -483,7 +486,7 @@ public class NetconfSession {
      *                      }"
      *                      will load 'ftp' under the 'systems services' hierarchy.
      * @param loadType      You can choose "merge" or "replace" as the loadType.
-     * @throws net.juniper.netconf.LoadException
+     * @throws LoadException
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
      */
@@ -505,7 +508,7 @@ public class NetconfSession {
      *                      "set system services ftp"
      *                      will load 'ftp' under the 'systems services' hierarchy.
      *                      To load multiple set statements, separate them by '\n' character.
-     * @throws net.juniper.netconf.LoadException
+     * @throws LoadException
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
      */
@@ -533,7 +536,7 @@ public class NetconfSession {
      * @param configFile Path name of file containing configuration,in xml format,
      *                   to be loaded.
      * @param loadType   You can choose "merge" or "replace" as the loadType.
-     * @throws net.juniper.netconf.LoadException
+     * @throws LoadException
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
      */
@@ -560,7 +563,7 @@ public class NetconfSession {
      * @param configFile Path name of file containing configuration,in xml format,
      *                   to be loaded.
      * @param loadType   You can choose "merge" or "replace" as the loadType.
-     * @throws net.juniper.netconf.LoadException
+     * @throws LoadException
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
      */
@@ -587,7 +590,7 @@ public class NetconfSession {
      *
      * @param configFile Path name of file containing configuration,in set format,
      *                   to be loaded.
-     * @throws net.juniper.netconf.LoadException
+     * @throws LoadException
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
      */
@@ -625,8 +628,8 @@ public class NetconfSession {
      * @param loadType   You can choose "merge" or "replace" as the loadType.
      *                   NOTE: This parameter's value is redundant in case the file contains
      *                   configuration in 'set' format.
-     * @throws net.juniper.netconf.LoadException
-     * @throws net.juniper.netconf.CommitException
+     * @throws LoadException
+     * @throws CommitException
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
      */
@@ -659,7 +662,7 @@ public class NetconfSession {
     /**
      * Commit the candidate configuration.
      *
-     * @throws net.juniper.netconf.CommitException
+     * @throws CommitException
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
      */
@@ -681,7 +684,7 @@ public class NetconfSession {
      *
      * @param seconds Time in seconds, after which the previous active configuration
      *                is reverted back to.
-     * @throws net.juniper.netconf.CommitException
+     * @throws CommitException
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
      */
@@ -859,16 +862,20 @@ public class NetconfSession {
      */
     public void openConfiguration(String mode) throws IOException {
 
-        StringBuffer rpc = new StringBuffer();
+        StringBuilder rpc = new StringBuilder();
         rpc.append(RPC_OPEN);
         rpc.append("<open-configuration>");
-        if (mode.startsWith("<"))
+        if (mode.startsWith("<")) {
             rpc.append(mode);
-        else
-            rpc.append("<" + mode + "/>");
-        rpc.append("</open-configuration>");
-        rpc.append(RPC_CLOSE);
-        rpc.append(PROMPT);
+        } else {
+            rpc.append("<")
+                    .append(mode)
+                    .append("/>");
+        }
+
+        rpc.append("</open-configuration>")
+                .append(RPC_CLOSE)
+                .append(PROMPT);
         String rpcReply = getRpcReply(rpc.toString());
         lastRpcReply = rpcReply;
     }
