@@ -34,13 +34,15 @@ import org.xml.sax.SAXException;
  * <li>creates a {@link #Device(String, String, String, String) Device}
  * object.</li>
  * <li>perform netconf operations on the Device object.</li>
- * <li>If needed, call the method createNetconfSession() to create another 
+ * <li>If needed, call the method createNetconfSession() to create another
  * NetconfSession.</li>
- * <li>Finally, one must close the Device and release resources with the 
+ * <li>Finally, one must close the Device and release resources with the
  * {@link #close() close()} method.</li>
  * </ol>
  */
 public class Device {
+
+    private static final int DEFAULT_TIMEOUT = 5000;
 
     private String hostName;
     private String userName;
@@ -57,9 +59,10 @@ public class Device {
 
     /**
      * Prepares a new <code>Device</code> object, with default client
-     * capabilities and default port 830, which can then be used to perform 
+     * capabilities and default port 830, which can then be used to perform
      * netconf operations.
      * <p>
+     *
      * @throws javax.xml.parsers.ParserConfigurationException
      */
     public Device() throws ParserConfigurationException {
@@ -67,7 +70,7 @@ public class Device {
         connectionOpen = false;
         helloRpc = defaultHelloRPC();
         port = 830;
-        timeout = 5000;
+        timeout = DEFAULT_TIMEOUT;
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         builder = factory.newDocumentBuilder();
     }
@@ -75,19 +78,16 @@ public class Device {
 
     /**
      * Prepares a new <code>Device</code> object, with default client
-     * capabilities and default port 830, which can then be used to perform 
+     * capabilities and default port 830, which can then be used to perform
      * netconf operations.
      * <p>
-     * @param hostName
-     *            the hostname of the Netconf server.
-     * @param userName
-     *            the login username of the Netconf server.
-     * @param password
-     *            the login password of the Netconf server.  
-     * @param pemKeyFile
-     *            path of the file containing RSA/DSA private key, in PEM
-     *            format. For user-password based authentication, let this be
-     *            null.
+     *
+     * @param hostName   the hostname of the Netconf server.
+     * @param userName   the login username of the Netconf server.
+     * @param password   the login password of the Netconf server.
+     * @param pemKeyFile path of the file containing RSA/DSA private key, in PEM
+     *                   format. For user-password based authentication, let this be
+     *                   null.
      * @throws net.juniper.netconf.NetconfException
      * @throws javax.xml.parsers.ParserConfigurationException
      */
@@ -105,28 +105,24 @@ public class Device {
         connectionOpen = false;
         helloRpc = defaultHelloRPC();
         port = 830;
-        timeout = 5000;
+        timeout = DEFAULT_TIMEOUT;
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         builder = factory.newDocumentBuilder();
     }
 
     /**
      * Prepares a new <code>Device</code> object, with default client
-     * capabilities and user-defined port which can then be used to perform 
+     * capabilities and user-defined port which can then be used to perform
      * netconf operations.
      * <p>
-     * @param hostName
-     *            the hostname of the Netconf server.
-     * @param userName
-     *            the login username of the Netconf server.
-     * @param password
-     *            the login password of the Netconf server. 
-     * @param pemKeyFile
-     *            path of the file containing RSA/DSA private key, in PEM
-     *            format. For user-password based authentication, let this be
-     *            null.
-     * @param port
-     *            port number to establish Netconf session over SSH-2.  
+     *
+     * @param hostName   the hostname of the Netconf server.
+     * @param userName   the login username of the Netconf server.
+     * @param password   the login password of the Netconf server.
+     * @param pemKeyFile path of the file containing RSA/DSA private key, in PEM
+     *                   format. For user-password based authentication, let this be
+     *                   null.
+     * @param port       port number to establish Netconf session over SSH-2.
      * @throws net.juniper.netconf.NetconfException
      * @throws javax.xml.parsers.ParserConfigurationException
      */
@@ -144,28 +140,24 @@ public class Device {
         connectionOpen = false;
         helloRpc = defaultHelloRPC();
         this.port = port;
-        timeout = 5000;
+        timeout = DEFAULT_TIMEOUT;
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         builder = factory.newDocumentBuilder();
     }
 
     /**
      * Prepares a new <code>Device</code> object, with user-defined client
-     * capabilities and default port 830 which can then be used to perform 
+     * capabilities and default port 830 which can then be used to perform
      * netconf operations.
      * <p>
-     * @param hostName
-     *            the hostname of the Netconf server.
-     * @param userName
-     *            the login username of the Netconf server.
-     * @param password
-     *            the login password of the Netconf server.  
-     * @param pemKeyFile
-     *            path of the file containing RSA/DSA private key, in PEM
-     *            format. For user-password based authentication, let this be
-     *            null.
-     * @param capabilities
-     *            the client capabilities to be advertised to Netconf server.
+     *
+     * @param hostName     the hostname of the Netconf server.
+     * @param userName     the login username of the Netconf server.
+     * @param password     the login password of the Netconf server.
+     * @param pemKeyFile   path of the file containing RSA/DSA private key, in PEM
+     *                     format. For user-password based authentication, let this be
+     *                     null.
+     * @param capabilities the client capabilities to be advertised to Netconf server.
      * @throws net.juniper.netconf.NetconfException
      * @throws javax.xml.parsers.ParserConfigurationException
      */
@@ -183,30 +175,25 @@ public class Device {
         connectionOpen = false;
         helloRpc = createHelloRPC(capabilities);
         port = 830;
-        timeout = 5000;
+        timeout = DEFAULT_TIMEOUT;
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         builder = factory.newDocumentBuilder();
     }
 
     /**
      * Prepares a new <code>Device</code> object, with user-defined client
-     * capabilities and user-defined port which can then be used to perform 
+     * capabilities and user-defined port which can then be used to perform
      * netconf operations.
      * <p>
-     * @param hostName
-     *            the hostname of the Netconf server.
-     * @param userName
-     *            the login username of the Netconf server.
-     * @param password
-     *            the login password of the Netconf server. 
-     * @param pemKeyFile
-     *            path of the file containing RSA/DSA private key, in PEM
-     *            format. For user-password based authentication, let this be
-     *            null.
-     * @param port
-     *            port number to establish Netconf session over SSH-2.    
-     * @param capabilities
-     *            the client capabilities to be advertised to Netconf server.
+     *
+     * @param hostName     the hostname of the Netconf server.
+     * @param userName     the login username of the Netconf server.
+     * @param password     the login password of the Netconf server.
+     * @param pemKeyFile   path of the file containing RSA/DSA private key, in PEM
+     *                     format. For user-password based authentication, let this be
+     *                     null.
+     * @param port         port number to establish Netconf session over SSH-2.
+     * @param capabilities the client capabilities to be advertised to Netconf server.
      * @throws net.juniper.netconf.NetconfException
      * @throws javax.xml.parsers.ParserConfigurationException
      */
@@ -224,7 +211,7 @@ public class Device {
         connectionOpen = false;
         helloRpc = createHelloRPC(capabilities);
         this.port = port;
-        timeout = 5000;
+        timeout = DEFAULT_TIMEOUT;
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         builder = factory.newDocumentBuilder();
     }
@@ -252,6 +239,7 @@ public class Device {
 
     /**
      * Connect to the Device, and establish a default NETCONF session.
+     *
      * @throws net.juniper.netconf.NetconfException
      */
     public void connect() throws NetconfException {
@@ -265,8 +253,8 @@ public class Device {
 
     /**
      * Set the timeout value for connecting to the Device.
-     * @param timeout
-     *           timeout in milliseconds.
+     *
+     * @param timeout timeout in milliseconds.
      */
     public void setTimeOut(int timeout) throws NetconfException {
         if (connectionOpen) {
@@ -278,8 +266,8 @@ public class Device {
 
     /**
      * Set the hostname of the Netconf server.
-     * @param hostName
-     *           hostname of the Netconf server, to be set.
+     *
+     * @param hostName hostname of the Netconf server, to be set.
      */
     public void setHostname(String hostName) throws NetconfException {
         if (connectionOpen) {
@@ -291,8 +279,8 @@ public class Device {
 
     /**
      * Set the username of the Netconf server.
-     * @param userName
-     *           username of the Netconf server, to be set.
+     *
+     * @param userName username of the Netconf server, to be set.
      */
     public void setUserName(String userName) throws NetconfException {
         if (connectionOpen) {
@@ -304,8 +292,8 @@ public class Device {
 
     /**
      * Set the password of the Netconf server.
-     * @param password
-     *           password of the Netconf server, to be set.
+     *
+     * @param password password of the Netconf server, to be set.
      */
     public void setPassword(String password) throws NetconfException {
         if (connectionOpen) {
@@ -317,8 +305,8 @@ public class Device {
 
     /**
      * Set path of the RSA/DSA private key.
-     * @param pemKeyFile
-     *            Path of the file containing RSA/DSA private key.
+     *
+     * @param pemKeyFile Path of the file containing RSA/DSA private key.
      */
     public void setPemKeyFile(String pemKeyFile) throws NetconfException {
         if (connectionOpen) {
@@ -331,8 +319,8 @@ public class Device {
 
     /**
      * Set the client capabilities to be advertised to the Netconf server.
-     * @param capabilities
-     *           Client capabilities to be advertised to the Netconf server.
+     *
+     * @param capabilities Client capabilities to be advertised to the Netconf server.
      */
     public void setCapabilities(ArrayList capabilities) throws NetconfException {
         if (capabilities == null) {
@@ -348,8 +336,8 @@ public class Device {
 
     /**
      * Set the port number to establish Netconf session over SSH-2.
-     * @param port
-     *           Port number.
+     *
+     * @param port Port number.
      */
     public void setPort(int port) throws NetconfException {
         if (connectionOpen) {
@@ -361,6 +349,7 @@ public class Device {
 
     /**
      * Get hostname of the Netconf server.
+     *
      * @return Hostname of the device.
      */
     public String gethostName() {
@@ -369,6 +358,7 @@ public class Device {
 
     /**
      * Create a new Netconf session.
+     *
      * @return NetconfSession
      * @throws net.juniper.netconf.NetconfException
      */
@@ -413,6 +403,7 @@ public class Device {
 
     /**
      * Reboot the device.
+     *
      * @return RPC reply sent by Netconf server.
      * @throws org.xml.sax.SAXException
      * @throws java.io.IOException
@@ -426,8 +417,8 @@ public class Device {
     }
 
     /**
-     * Close the connection to the Netconf server. All associated Netconf 
-     * sessions will be closed, too. Can be called at any time. Don't forget to 
+     * Close the connection to the Netconf server. All associated Netconf
+     * sessions will be closed, too. Can be called at any time. Don't forget to
      * call this once you don't need the device anymore.
      */
     public void close() {
@@ -440,8 +431,8 @@ public class Device {
 
     /**
      * Execute a command in shell mode.
-     * @param command
-     *          The command to be executed in shell mode.
+     *
+     * @param command The command to be executed in shell mode.
      * @return Result of the command execution, as a String.
      * @throws java.io.IOException
      */
@@ -473,11 +464,11 @@ public class Device {
 
     /**
      * Execute a command in shell mode.
-     * @param command
-     *          The command to be executed in shell mode.
-     * @return Result of the command execution, as a BufferedReader. This is 
-     *         useful if we want continuous stream of output, rather than wait
-     *         for whole output till command execution completes.
+     *
+     * @param command The command to be executed in shell mode.
+     * @return Result of the command execution, as a BufferedReader. This is
+     * useful if we want continuous stream of output, rather than wait
+     * for whole output till command execution completes.
      * @throws java.io.IOException
      */
     public BufferedReader runShellCommandRunning(String command)
@@ -495,8 +486,9 @@ public class Device {
     }
 
     /**
-     * Get the client capabilities that are advertised to the Netconf server 
+     * Get the client capabilities that are advertised to the Netconf server
      * by default.
+     *
      * @return Arraylist of default client capabilities.
      */
     public ArrayList getDefaultClientCapabilities() {
@@ -510,16 +502,16 @@ public class Device {
     }
 
     /**
-     * Send an RPC(as String object) over the default Netconf session and get 
+     * Send an RPC(as String object) over the default Netconf session and get
      * the response as an XML object.
      * <p>
-     * @param rpcContent
-     *          RPC content to be sent. For example, to send an rpc 
-     *          &lt;rpc&gt;&lt;get-chassis-inventory/&gt;&lt;/rpc&gt;, the 
-     *          String to be passed can be
-     *                 "&lt;get-chassis-inventory/&gt;" OR
-     *                 "get-chassis-inventory" OR
-     *                 "&lt;rpc&gt;&lt;get-chassis-inventory/&gt;&lt;/rpc&gt;"
+     *
+     * @param rpcContent RPC content to be sent. For example, to send an rpc
+     *                   &lt;rpc&gt;&lt;get-chassis-inventory/&gt;&lt;/rpc&gt;, the
+     *                   String to be passed can be
+     *                   "&lt;get-chassis-inventory/&gt;" OR
+     *                   "get-chassis-inventory" OR
+     *                   "&lt;rpc&gt;&lt;get-chassis-inventory/&gt;&lt;/rpc&gt;"
      * @return RPC reply sent by Netconf server
      * @throws org.xml.sax.SAXException
      * @throws java.io.IOException
@@ -533,12 +525,12 @@ public class Device {
     }
 
     /**
-     * Send an RPC(as XML object) over the Netconf session and get the response 
+     * Send an RPC(as XML object) over the Netconf session and get the response
      * as an XML object.
      * <p>
-     * @param rpc
-     *          RPC to be sent. Use the XMLBuilder to create RPC as an
-     *          XML object.
+     *
+     * @param rpc RPC to be sent. Use the XMLBuilder to create RPC as an
+     *            XML object.
      * @return RPC reply sent by Netconf server
      * @throws org.xml.sax.SAXException
      * @throws java.io.IOException
@@ -552,11 +544,11 @@ public class Device {
     }
 
     /**
-     * Send an RPC(as Document object) over the Netconf session and get the 
+     * Send an RPC(as Document object) over the Netconf session and get the
      * response as an XML object.
      * <p>
-     * @param rpcDoc
-     *          RPC content to be sent, as a org.w3c.dom.Document object.
+     *
+     * @param rpcDoc RPC content to be sent, as a org.w3c.dom.Document object.
      * @return RPC reply sent by Netconf server
      * @throws org.xml.sax.SAXException
      * @throws java.io.IOException
@@ -570,19 +562,19 @@ public class Device {
     }
 
     /**
-     * Send an RPC(as String object) over the default Netconf session and get 
+     * Send an RPC(as String object) over the default Netconf session and get
      * the response as a BufferedReader.
      * <p>
-     * @param rpcContent
-     *          RPC content to be sent. For example, to send an rpc 
-     *          &lt;rpc&gt;&lt;get-chassis-inventory/&gt;&lt;/rpc&gt;, the 
-     *          String to be passed can be
-     *                 "&lt;get-chassis-inventory/&gt;" OR
-     *                 "get-chassis-inventory" OR
-     *                 "&lt;rpc&gt;&lt;get-chassis-inventory/&gt;&lt;/rpc&gt;"
-     * @return RPC reply sent by Netconf server as a BufferedReader. This is 
-     *         useful if we want continuous stream of output, rather than wait
-     *         for whole output till rpc execution completes.
+     *
+     * @param rpcContent RPC content to be sent. For example, to send an rpc
+     *                   &lt;rpc&gt;&lt;get-chassis-inventory/&gt;&lt;/rpc&gt;, the
+     *                   String to be passed can be
+     *                   "&lt;get-chassis-inventory/&gt;" OR
+     *                   "get-chassis-inventory" OR
+     *                   "&lt;rpc&gt;&lt;get-chassis-inventory/&gt;&lt;/rpc&gt;"
+     * @return RPC reply sent by Netconf server as a BufferedReader. This is
+     * useful if we want continuous stream of output, rather than wait
+     * for whole output till rpc execution completes.
      * @throws org.xml.sax.SAXException
      * @throws java.io.IOException
      */
@@ -596,15 +588,15 @@ public class Device {
     }
 
     /**
-     * Send an RPC(as XML object) over the Netconf session and get the response 
+     * Send an RPC(as XML object) over the Netconf session and get the response
      * as a BufferedReader.
      * <p>
-     * @param rpc
-     *          RPC to be sent. Use the XMLBuilder to create RPC as an
-     *          XML object.
-     * @return RPC reply sent by Netconf server as a BufferedReader. This is 
-     *         useful if we want continuous stream of output, rather than wait
-     *         for whole output till command execution completes.
+     *
+     * @param rpc RPC to be sent. Use the XMLBuilder to create RPC as an
+     *            XML object.
+     * @return RPC reply sent by Netconf server as a BufferedReader. This is
+     * useful if we want continuous stream of output, rather than wait
+     * for whole output till command execution completes.
      * @throws org.xml.sax.SAXException
      * @throws java.io.IOException
      */
@@ -618,14 +610,14 @@ public class Device {
     }
 
     /**
-     * Send an RPC(as Document object) over the Netconf session and get the 
+     * Send an RPC(as Document object) over the Netconf session and get the
      * response as a BufferedReader.
      * <p>
-     * @param rpcDoc
-     *          RPC content to be sent, as a org.w3c.dom.Document object.
-     * @return RPC reply sent by Netconf server as a BufferedReader. This is 
-     *         useful if we want continuous stream of output, rather than wait
-     *         for whole output till command execution completes.
+     *
+     * @param rpcDoc RPC content to be sent, as a org.w3c.dom.Document object.
+     * @return RPC reply sent by Netconf server as a BufferedReader. This is
+     * useful if we want continuous stream of output, rather than wait
+     * for whole output till command execution completes.
      * @throws org.xml.sax.SAXException
      * @throws java.io.IOException
      */
@@ -640,6 +632,7 @@ public class Device {
 
     /**
      * Get the session ID of the Netconf session.
+     *
      * @return Session ID
      */
     public String getSessionId() {
@@ -652,6 +645,7 @@ public class Device {
 
     /**
      * Check if the last RPC reply returned from Netconf server has any error.
+     *
      * @return true if any errors are found in last RPC reply.
      */
     public boolean hasError() throws SAXException, IOException {
@@ -664,6 +658,7 @@ public class Device {
 
     /**
      * Check if the last RPC reply returned from Netconf server has any warning.
+     *
      * @return true if any errors are found in last RPC reply.
      */
     public boolean hasWarning() throws SAXException, IOException {
@@ -675,8 +670,9 @@ public class Device {
     }
 
     /**
-     * Check if the last RPC reply returned from Netconf server, contains 
+     * Check if the last RPC reply returned from Netconf server, contains
      * &lt;ok/&gt; tag.
+     *
      * @return true if &lt;ok/&gt; tag is found in last RPC reply.
      */
     public boolean isOK() {
@@ -689,6 +685,7 @@ public class Device {
 
     /**
      * Locks the candidate configuration.
+     *
      * @return true if successful.
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
@@ -703,6 +700,7 @@ public class Device {
 
     /**
      * Unlocks the candidate configuration.
+     *
      * @return true if successful.
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
@@ -717,13 +715,12 @@ public class Device {
 
     /**
      * Loads the candidate configuration, Configuration should be in XML format.
-     * @param configuration
-     *            Configuration,in XML format, to be loaded. For example,
-     * "&lt;configuration&gt;&lt;system&gt;&lt;services&gt;&lt;ftp/&gt;
-     * &lt;services/&gt;&lt;/system&gt;&lt;/configuration/&gt;"
-     * will load 'ftp' under the 'systems services' hierarchy.  
-     * @param loadType
-     *           You can choose "merge" or "replace" as the loadType.
+     *
+     * @param configuration Configuration,in XML format, to be loaded. For example,
+     *                      "&lt;configuration&gt;&lt;system&gt;&lt;services&gt;&lt;ftp/&gt;
+     *                      &lt;services/&gt;&lt;/system&gt;&lt;/configuration/&gt;"
+     *                      will load 'ftp' under the 'systems services' hierarchy.
+     * @param loadType      You can choose "merge" or "replace" as the loadType.
      * @throws net.juniper.netconf.LoadException
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
@@ -738,18 +735,17 @@ public class Device {
     }
 
     /**
-     * Loads the candidate configuration, Configuration should be in text/tree 
+     * Loads the candidate configuration, Configuration should be in text/tree
      * format.
-     * @param configuration
-     *            Configuration,in text/tree format, to be loaded. For example,
-     * " system {
-     *     services {
-     *         ftp;
-     *     }
-     *   }"
-     * will load 'ftp' under the 'systems services' hierarchy.  
-     * @param loadType
-     *           You can choose "merge" or "replace" as the loadType.
+     *
+     * @param configuration Configuration,in text/tree format, to be loaded. For example,
+     *                      " system {
+     *                      services {
+     *                      ftp;
+     *                      }
+     *                      }"
+     *                      will load 'ftp' under the 'systems services' hierarchy.
+     * @param loadType      You can choose "merge" or "replace" as the loadType.
      * @throws net.juniper.netconf.LoadException
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
@@ -764,14 +760,14 @@ public class Device {
     }
 
     /**
-     * Loads the candidate configuration, Configuration should be in set 
+     * Loads the candidate configuration, Configuration should be in set
      * format.
      * NOTE: This method is applicable only for JUNOS release 11.4 and above.
-     * @param configuration
-     *            Configuration,in set format, to be loaded. For example,
-     * "set system services ftp"
-     * will load 'ftp' under the 'systems services' hierarchy. 
-     * To load multiple set statements, separate them by '\n' character.
+     *
+     * @param configuration Configuration,in set format, to be loaded. For example,
+     *                      "set system services ftp"
+     *                      will load 'ftp' under the 'systems services' hierarchy.
+     *                      To load multiple set statements, separate them by '\n' character.
      * @throws net.juniper.netconf.LoadException
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
@@ -787,13 +783,12 @@ public class Device {
     }
 
     /**
-     * Loads the candidate configuration from file, 
+     * Loads the candidate configuration from file,
      * configuration should be in XML format.
-     * @param configFile
-     *            Path name of file containing configuration,in xml format,
-     *            to be loaded. 
-     * @param loadType
-     *           You can choose "merge" or "replace" as the loadType.
+     *
+     * @param configFile Path name of file containing configuration,in xml format,
+     *                   to be loaded.
+     * @param loadType   You can choose "merge" or "replace" as the loadType.
      * @throws net.juniper.netconf.LoadException
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
@@ -808,13 +803,12 @@ public class Device {
     }
 
     /**
-     * Loads the candidate configuration from file, 
+     * Loads the candidate configuration from file,
      * configuration should be in text/tree format.
-     * @param configFile
-     *            Path name of file containing configuration,in xml format,
-     *            to be loaded. 
-     * @param loadType
-     *           You can choose "merge" or "replace" as the loadType.
+     *
+     * @param configFile Path name of file containing configuration,in xml format,
+     *                   to be loaded.
+     * @param loadType   You can choose "merge" or "replace" as the loadType.
      * @throws net.juniper.netconf.LoadException
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
@@ -832,9 +826,9 @@ public class Device {
      * Loads the candidate configuration from file,
      * configuration should be in set format.
      * NOTE: This method is applicable only for JUNOS release 11.4 and above.
-     * @param configFile
-     *            Path name of file containing configuration,in set format, 
-     *            to be loaded.
+     *
+     * @param configFile Path name of file containing configuration,in set format,
+     *                   to be loaded.
      * @throws net.juniper.netconf.LoadException
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
@@ -850,6 +844,7 @@ public class Device {
 
     /**
      * Commit the candidate configuration.
+     *
      * @throws net.juniper.netconf.CommitException
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
@@ -863,11 +858,11 @@ public class Device {
     }
 
     /**
-     * Commit the candidate configuration, temporarily. This is equivalent of 
+     * Commit the candidate configuration, temporarily. This is equivalent of
      * 'commit confirm'
-     * @param seconds
-     *           Time in seconds, after which the previous active configuration 
-     *           is reverted back to.
+     *
+     * @param seconds Time in seconds, after which the previous active configuration
+     *                is reverted back to.
      * @throws net.juniper.netconf.CommitException
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
@@ -882,23 +877,22 @@ public class Device {
     }
 
     /**
-     * Loads and commits the candidate configuration, Configuration can be in 
+     * Loads and commits the candidate configuration, Configuration can be in
      * text/xml format.
-     * @param configFile
-     *            Path name of file containing configuration,in text/xml format,
-     * to be loaded. For example,
-     * " system {
-     *     services {
-     *         ftp;
-     *     }
-     *   }"
-     * will load 'ftp' under the 'systems services' hierarchy.  
-     * OR
-     * "&lt;configuration&gt;&lt;system&gt;&lt;services&gt;&lt;ftp/&gt;&lt;
-     * services/&gt;&lt;/system&gt;&lt;/configuration/&gt;"
-     * will load 'ftp' under the 'systems services' hierarchy.  
-     * @param loadType
-     *           You can choose "merge" or "replace" as the loadType.
+     *
+     * @param configFile Path name of file containing configuration,in text/xml format,
+     *                   to be loaded. For example,
+     *                   " system {
+     *                   services {
+     *                   ftp;
+     *                   }
+     *                   }"
+     *                   will load 'ftp' under the 'systems services' hierarchy.
+     *                   OR
+     *                   "&lt;configuration&gt;&lt;system&gt;&lt;services&gt;&lt;ftp/&gt;&lt;
+     *                   services/&gt;&lt;/system&gt;&lt;/configuration/&gt;"
+     *                   will load 'ftp' under the 'systems services' hierarchy.
+     * @param loadType   You can choose "merge" or "replace" as the loadType.
      * @throws net.juniper.netconf.LoadException
      * @throws net.juniper.netconf.CommitException
      * @throws java.io.IOException
@@ -915,10 +909,10 @@ public class Device {
 
     /**
      * Retrieve the candidate configuration, or part of the configuration.
-     * @param configTree
-     *           configuration hierarchy to be retrieved as the argument.
-     * For example, to get the whole configuration, argument should be 
-     * &lt;configuration&gt;&lt;/configuration&gt;
+     *
+     * @param configTree configuration hierarchy to be retrieved as the argument.
+     *                   For example, to get the whole configuration, argument should be
+     *                   &lt;configuration&gt;&lt;/configuration&gt;
      * @return configuration data as XML object.
      * @throws org.xml.sax.SAXException
      * @throws java.io.IOException
@@ -934,10 +928,10 @@ public class Device {
 
     /**
      * Retrieve the running configuration, or part of the configuration.
-     * @param configTree
-     *           configuration hierarchy to be retrieved as the argument.
-     * For example, to get the whole configuration, argument should be 
-     * &lt;configuration&gt;&lt;/configuration&gt;
+     *
+     * @param configTree configuration hierarchy to be retrieved as the argument.
+     *                   For example, to get the whole configuration, argument should be
+     *                   &lt;configuration&gt;&lt;/configuration&gt;
      * @return configuration data as XML object.
      * @throws org.xml.sax.SAXException
      * @throws java.io.IOException
@@ -953,6 +947,7 @@ public class Device {
 
     /**
      * Retrieve the whole candidate configuration.
+     *
      * @return configuration data as XML object.
      * @throws org.xml.sax.SAXException
      * @throws java.io.IOException
@@ -967,6 +962,7 @@ public class Device {
 
     /**
      * Retrieve the whole running configuration.
+     *
      * @return configuration data as XML object.
      * @throws org.xml.sax.SAXException
      * @throws java.io.IOException
@@ -981,6 +977,7 @@ public class Device {
 
     /**
      * Validate the candidate configuration.
+     *
      * @return true if validation successful.
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
@@ -995,9 +992,9 @@ public class Device {
 
     /**
      * Run a cli command, and get the corresponding output.
-     * NOTE: The text output is supported for JUNOS 11.4 and later. 
-     * @param command
-     *       the cli command to be executed.
+     * NOTE: The text output is supported for JUNOS 11.4 and later.
+     *
+     * @param command the cli command to be executed.
      * @return result of the command.
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
@@ -1012,11 +1009,11 @@ public class Device {
 
     /**
      * Run a cli command.
-     * @param command
-     *       the cli command to be executed.
-     * @return result of the command, as a Bufferedreader. This is 
-     *         useful if we want continuous stream of output, rather than wait
-     *         for whole output till command execution completes.
+     *
+     * @param command the cli command to be executed.
+     * @return result of the command, as a Bufferedreader. This is
+     * useful if we want continuous stream of output, rather than wait
+     * for whole output till command execution completes.
      * @throws org.xml.sax.SAXException
      * @throws java.io.IOException
      */
@@ -1030,11 +1027,11 @@ public class Device {
     }
 
     /**
-     * This method should be called for load operations to happen in 'private' 
+     * This method should be called for load operations to happen in 'private'
      * mode.
-     * @param mode
-     *       Mode in which to open the configuration.
-     *       Permissible mode(s): "private"
+     *
+     * @param mode Mode in which to open the configuration.
+     *             Permissible mode(s): "private"
      * @throws java.io.IOException
      */
     public void openConfiguration(String mode) throws IOException {
@@ -1048,6 +1045,7 @@ public class Device {
     /**
      * This method should be called to close a private session, in case its
      * started.
+     *
      * @throws java.io.IOException
      */
     public void closeConfiguration() throws IOException {
@@ -1060,6 +1058,7 @@ public class Device {
 
     /**
      * Returns the last RPC reply sent by Netconf server.
+     *
      * @return Last RPC reply, as a string
      */
     public String getLastRPCReply() {
