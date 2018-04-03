@@ -1,10 +1,9 @@
 /**
-* Copyright (c) 2013 Juniper Networks, Inc.
-* All Rights Reserved
-*
-* Use is subject to license terms.
-*
-*/
+ * Copyright (c) 2013 Juniper Networks, Inc.
+ * All Rights Reserved
+ * <p>
+ * Use is subject to license terms.
+ */
 
 package net.juniper.netconf;
 
@@ -30,7 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A <code>NetconfSession</code> object is used to call the Netconf driver 
+ * A <code>NetconfSession</code> object is used to call the Netconf driver
  * methods.
  * This is derived by creating a Device first,
  * and calling createNetconfSession().
@@ -38,10 +37,10 @@ import java.util.List;
  * Typically, one
  * <ol>
  * <li>creates a Device object.</li>
- * <li>calls the createNetconfSession() method to get a NetconfSession 
+ * <li>calls the createNetconfSession() method to get a NetconfSession
  * object.</li>
  * <li>perform operations on the NetconfSession object.</li>
- * <li>finally, one must close the NetconfSession and release resources with 
+ * <li>finally, one must close the NetconfSession and release resources with
  * the {@link #close() close()} method.</li>
  * </ol>
  */
@@ -50,65 +49,61 @@ public class NetconfSession {
     private final static Logger LOG = LoggerFactory.getLogger(NetconfSession.class);
 
     public final static String PROMPT = "]]>]]>";
-    public final static String RPC_OPEN = "<rpc>";
-    public final static String RPC_CLOSE = "</rpc>";
 
-    
+    private final static String RPC_OPEN = "<rpc>";
+    private final static String RPC_CLOSE = "</rpc>";
+    private final static int RESPONSE_TIMEOUT = 20000;
+    private final static int THREAD_TIMEOUT = 400;
+
+
     private Session netconfSession;
     private String serverCapability;
-    private InputStream stdout; 
-    private BufferedReader bufferReader; 
+    private InputStream stdout;
+    private BufferedReader bufferReader;
     private String lastRpcReply;
     private DocumentBuilder builder;
-       
+
     protected NetconfSession(Session netconfSession, String hello,
-            DocumentBuilder builder) throws NetconfException, IOException {
-        
+                             DocumentBuilder builder) throws NetconfException, IOException {
         this.netconfSession = netconfSession;
         this.builder = builder;
         stdout = new StreamGobbler(netconfSession.getStdout());
         bufferReader = new BufferedReader(new InputStreamReader(stdout));
         sendHello(hello);
     }
-    
+
     private XML convertToXML(String xml) throws SAXException, IOException {
+        LOG.debug("Input xml [{}]", xml);
         Document doc = builder.parse(new InputSource(new StringReader(xml)));
-        Element root = doc.getDocumentElement(); 
+        Element root = doc.getDocumentElement();
         return new XML(root);
     }
-    
+
     private void sendHello(String hello) throws IOException {
         String reply = getRpcReply(hello);
         serverCapability = reply;
         lastRpcReply = reply;
     }
-    
+
     private String getRpcReply(String rpc) throws IOException {
-        byte b[] = rpc.getBytes();
-        netconfSession.getStdin().write(b);
-        StringBuilder rpcReply = new StringBuilder();
-        while (true) {
-            String line = bufferReader.readLine();
-            if (line == null || line.equals(PROMPT))
-                break;
-            rpcReply.append(line).append("\n");
-        }
-        return rpcReply.toString();
+        netconfSession.getStdin().write(rpc.getBytes());
+
+        return getResponseString(PROMPT, stdout, RESPONSE_TIMEOUT);
     }
 
-    
+
     private BufferedReader getRpcReplyRunning(String rpc) throws IOException {
-        byte b[]= rpc.getBytes();
+        byte b[] = rpc.getBytes();
         netconfSession.getStdin().write(b);
         return bufferReader;
     }
-    
-    private void loadXMLConfiguration(String target, String configuration, 
-            String loadType) throws LoadException, IOException, SAXException {
-        
+
+    private void loadXMLConfiguration(String target, String configuration,
+                                      String loadType) throws LoadException, IOException, SAXException {
+
         configuration = configuration.trim();
         if (!configuration.startsWith("<configuration")) {
-            configuration = "<configuration>" + configuration 
+            configuration = "<configuration>" + configuration
                     + "</configuration>";
         }
         StringBuffer rpc = new StringBuffer();
@@ -131,35 +126,35 @@ public class NetconfSession {
         if (hasError() || !isOK())
             throw new LoadException("Load operation returned error.");
     }
-    
-    private void loadTextConfiguration(String target, String configuration, 
-            String loadType) throws LoadException, IOException, SAXException {
+
+    private void loadTextConfiguration(String target, String configuration,
+                                       String loadType) throws LoadException, IOException, SAXException {
         StringBuffer rpc = new StringBuffer();
-        rpc.append(RPC_OPEN);
-        rpc.append("<edit-config>");
-        rpc.append("<target>");
-        rpc.append("<" + target + "/>");
-        rpc.append("</target>");
-        rpc.append("<default-operation>");
-        rpc.append(loadType);
-        rpc.append("</default-operation>");
-        rpc.append("<config-text>");
-        rpc.append("<configuration-text>");
-        rpc.append(configuration);
-        rpc.append("</configuration-text>");
-        rpc.append("</config-text>");
-        rpc.append("</edit-config>");
-        rpc.append(RPC_CLOSE);
-        rpc.append(PROMPT);
+        rpc.append(RPC_OPEN)
+                .append("<edit-config>")
+                .append("<target>")
+                .append("<" + target + "/>")
+                .append("</target>")
+                .append("<default-operation>")
+                .append(loadType)
+                .append("</default-operation>")
+                .append("<config-text>")
+                .append("<configuration-text>")
+                .append(configuration)
+                .append("</configuration-text>")
+                .append("</config-text>")
+                .append("</edit-config>")
+                .append(RPC_CLOSE)
+                .append(PROMPT);
         String rpcReply = getRpcReply(rpc.toString());
         lastRpcReply = rpcReply;
         if (hasError() || !isOK())
             throw new LoadException("Load operation returned error");
     }
-    
-    private String getConfig(String target, String configTree) 
+
+    private String getConfig(String target, String configTree)
             throws IOException {
-        
+
         StringBuffer rpc = new StringBuffer();
         rpc.append(RPC_OPEN);
         rpc.append("<get-config>");
@@ -176,64 +171,65 @@ public class NetconfSession {
         lastRpcReply = rpcReply;
         return lastRpcReply;
     }
-    
+
     private String readFile(String path) throws FileNotFoundException, IOException {
         String strFileContent = "";
         File file = new File(path);
         FileInputStream fin = new FileInputStream(file);
-        byte fileContent[] = new byte[(int)file.length()];
+        byte fileContent[] = new byte[(int) file.length()];
         fin.read(fileContent);
         strFileContent = new String(fileContent);
         return strFileContent;
     }
-    
+
     /**
      * Get capability of the Netconf server.
+     *
      * @return server capability
      */
     public String getServerCapability() {
         return serverCapability;
     }
-    
+
     /**
-     * Send an RPC(as String object) over the default Netconf session and get 
+     * Send an RPC(as String object) over the default Netconf session and get
      * the response as an XML object.
      * <p>
-     * @param rpcContent
-     *          RPC content to be sent. For example, to send an rpc 
-     *          &lt;rpc&gt;&lt;get-chassis-inventory/&gt;&lt;/rpc&gt;, the 
-     *          String to be passed can be 
-     *                 "&lt;get-chassis-inventory/&gt;" OR
-     *                 "get-chassis-inventory" OR
-     *                 "&lt;rpc&gt;&lt;get-chassis-inventory/&gt;&lt;/rpc&gt;"
+     *
+     * @param rpcContent RPC content to be sent. For example, to send an rpc
+     *                   &lt;rpc&gt;&lt;get-chassis-inventory/&gt;&lt;/rpc&gt;, the
+     *                   String to be passed can be
+     *                   "&lt;get-chassis-inventory/&gt;" OR
+     *                   "get-chassis-inventory" OR
+     *                   "&lt;rpc&gt;&lt;get-chassis-inventory/&gt;&lt;/rpc&gt;"
      * @return RPC reply sent by Netconf server
      * @throws org.xml.sax.SAXException
      * @throws java.io.IOException
      */
     public XML executeRPC(String rpcContent) throws SAXException, IOException {
         if (rpcContent == null) {
-            throw new IllegalArgumentException("Null RPC");
+            throw new IllegalArgumentException("RpcContent can't be null");
         }
         rpcContent = rpcContent.trim();
         if (!rpcContent.startsWith(RPC_OPEN) && !rpcContent.equals("<rpc/>")) {
             if (rpcContent.startsWith("<"))
-                rpcContent = RPC_OPEN + rpcContent + RPC_CLOSE; 
+                rpcContent = RPC_OPEN + rpcContent + RPC_CLOSE;
             else
-                rpcContent = RPC_OPEN + "<" + rpcContent + "/>" + RPC_CLOSE; 
+                rpcContent = RPC_OPEN + "<" + rpcContent + "/>" + RPC_CLOSE;
         }
         rpcContent += PROMPT;
         String rpcReply = getRpcReply(rpcContent);
         lastRpcReply = rpcReply;
         return convertToXML(rpcReply);
     }
-    
+
     /**
-     * Send an RPC(as XML object) over the Netconf session and get the response 
+     * Send an RPC(as XML object) over the Netconf session and get the response
      * as an XML object.
      * <p>
-     * @param rpc
-     *          RPC to be sent. Use the XMLBuilder to create RPC as an
-     *          XML object.
+     *
+     * @param rpc RPC to be sent. Use the XMLBuilder to create RPC as an
+     *            XML object.
      * @return RPC reply sent by Netconf server
      * @throws org.xml.sax.SAXException
      * @throws java.io.IOException
@@ -241,13 +237,13 @@ public class NetconfSession {
     public XML executeRPC(XML rpc) throws SAXException, IOException {
         return executeRPC(rpc.toString());
     }
-    
+
     /**
-     * Send an RPC(as Document object) over the Netconf session and get the 
+     * Send an RPC(as Document object) over the Netconf session and get the
      * response as an XML object.
      * <p>
-     * @param rpcDoc
-     *          RPC content to be sent, as a org.w3c.dom.Document object.
+     *
+     * @param rpcDoc RPC content to be sent, as a org.w3c.dom.Document object.
      * @return RPC reply sent by Netconf server
      * @throws org.xml.sax.SAXException
      * @throws java.io.IOException
@@ -257,25 +253,25 @@ public class NetconfSession {
         XML xml = new XML(root);
         return executeRPC(xml);
     }
-    
+
     /**
-     * Send an RPC(as String object) over the default Netconf session and get 
+     * Send an RPC(as String object) over the default Netconf session and get
      * the response as a BufferedReader.
      * <p>
-     * @param rpcContent
-     *          RPC content to be sent. For example, to send an rpc 
-     *          &lt;rpc&gt;&lt;get-chassis-inventory/&gt;&lt;/rpc&gt;, the 
-     *          String to be passed can be 
-     *                 "&lt;get-chassis-inventory/&gt;" OR
-     *                 "get-chassis-inventory" OR
-     *                 "&lt;rpc&gt;&lt;get-chassis-inventory/&gt;&lt;/rpc&gt;"
-     * @return RPC reply sent by Netconf server as a BufferedReader. This is 
-     *         useful if we want continuous stream of output, rather than wait
-     *         for whole output till command execution completes.
+     *
+     * @param rpcContent RPC content to be sent. For example, to send an rpc
+     *                   &lt;rpc&gt;&lt;get-chassis-inventory/&gt;&lt;/rpc&gt;, the
+     *                   String to be passed can be
+     *                   "&lt;get-chassis-inventory/&gt;" OR
+     *                   "get-chassis-inventory" OR
+     *                   "&lt;rpc&gt;&lt;get-chassis-inventory/&gt;&lt;/rpc&gt;"
+     * @return RPC reply sent by Netconf server as a BufferedReader. This is
+     * useful if we want continuous stream of output, rather than wait
+     * for whole output till command execution completes.
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
      */
-    public BufferedReader executeRPCRunning(String rpcContent) 
+    public BufferedReader executeRPCRunning(String rpcContent)
             throws IOException, SAXException {
         if (rpcContent == null) {
             throw new IllegalArgumentException("Null RPC");
@@ -283,41 +279,41 @@ public class NetconfSession {
         rpcContent = rpcContent.trim();
         if (!rpcContent.startsWith(RPC_OPEN) && !rpcContent.equals("<rpc/>")) {
             if (rpcContent.startsWith("<"))
-                rpcContent = RPC_OPEN + rpcContent + RPC_CLOSE; 
+                rpcContent = RPC_OPEN + rpcContent + RPC_CLOSE;
             else
-                rpcContent = RPC_OPEN + "<" + rpcContent + "/>" + RPC_CLOSE; 
+                rpcContent = RPC_OPEN + "<" + rpcContent + "/>" + RPC_CLOSE;
         }
         rpcContent += PROMPT;
         return getRpcReplyRunning(rpcContent);
     }
-    
+
     /**
-     * Send an RPC(as XML object) over the Netconf session and get the response 
+     * Send an RPC(as XML object) over the Netconf session and get the response
      * as a BufferedReader.
      * <p>
-     * @param rpc
-     *          RPC to be sent. Use the XMLBuilder to create RPC as an
-     *          XML object.
-     * @return RPC reply sent by Netconf server as a BufferedReader. This is 
-     *         useful if we want continuous stream of output, rather than wait
-     *         for whole output till command execution completes.
+     *
+     * @param rpc RPC to be sent. Use the XMLBuilder to create RPC as an
+     *            XML object.
+     * @return RPC reply sent by Netconf server as a BufferedReader. This is
+     * useful if we want continuous stream of output, rather than wait
+     * for whole output till command execution completes.
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
      */
-    public BufferedReader executeRPCRunning(XML rpc) throws IOException, 
+    public BufferedReader executeRPCRunning(XML rpc) throws IOException,
             SAXException {
         return executeRPCRunning(rpc.toString());
     }
-    
+
     /**
-     * Send an RPC(as Document object) over the Netconf session and get the 
+     * Send an RPC(as Document object) over the Netconf session and get the
      * response as a BufferedReader.
      * <p>
-     * @param rpcDoc
-     *          RPC content to be sent, as a org.w3c.dom.Document object.
-     * @return RPC reply sent by Netconf server as a BufferedReader. This is 
-     *         useful if we want continuous stream of output, rather than wait
-     *         for whole output till command execution completes.
+     *
+     * @param rpcDoc RPC content to be sent, as a org.w3c.dom.Document object.
+     * @return RPC reply sent by Netconf server as a BufferedReader. This is
+     * useful if we want continuous stream of output, rather than wait
+     * for whole output till command execution completes.
      * @throws org.xml.sax.SAXException
      * @throws java.io.IOException
      */
@@ -327,9 +323,10 @@ public class NetconfSession {
         XML xml = new XML(root);
         return executeRPCRunning(xml);
     }
-    
+
     /**
      * Get the session ID of the Netconf session.
+     *
      * @return Session ID as a string.
      */
     public String getSessionId() {
@@ -341,9 +338,9 @@ public class NetconfSession {
             return null;
         return idSplit[0];
     }
-    
+
     /**
-     * Close the Netconf session. You should always call this once you don't 
+     * Close the Netconf session. You should always call this once you don't
      * need the session anymore.
      */
     public void close() throws IOException {
@@ -359,10 +356,11 @@ public class NetconfSession {
 
     /**
      * Check if the last RPC reply returned from Netconf server has any error.
+     *
      * @return true if any errors are found in last RPC reply.
      */
     public boolean hasError() throws SAXException, IOException {
-        if (lastRpcReply == null || !(lastRpcReply.indexOf("<rpc-error>") >= 0)) 
+        if (lastRpcReply == null || !(lastRpcReply.indexOf("<rpc-error>") >= 0))
             return false;
         XML xmlReply = convertToXML(lastRpcReply);
         List tagList = new ArrayList();
@@ -373,13 +371,14 @@ public class NetconfSession {
             return true;
         return false;
     }
-    
+
     /**
      * Check if the last RPC reply returned from Netconf server has any warning.
+     *
      * @return true if any errors are found in last RPC reply.
      */
     public boolean hasWarning() throws SAXException, IOException {
-        if (lastRpcReply == null || !(lastRpcReply.indexOf("<rpc-error>") >= 0)) 
+        if (lastRpcReply == null || !(lastRpcReply.indexOf("<rpc-error>") >= 0))
             return false;
         XML xmlReply = convertToXML(lastRpcReply);
         List tagList = new ArrayList();
@@ -390,23 +389,25 @@ public class NetconfSession {
             return true;
         return false;
     }
-    
+
     /**
-     * Check if the last RPC reply returned from Netconf server, 
+     * Check if the last RPC reply returned from Netconf server,
      * contains &lt;ok/&gt; tag.
+     *
      * @return true if &lt;ok/&gt; tag is found in last RPC reply.
      */
     public boolean isOK() {
-        if (lastRpcReply != null && lastRpcReply.indexOf("<ok/>") >= 0) 
+        if (lastRpcReply != null && lastRpcReply.indexOf("<ok/>") >= 0)
             return true;
         return false;
     }
-    
+
     /**
      * Locks the candidate configuration.
+     *
      * @return true if successful.
      * @throws java.io.IOException
-     * @throws org.xml.sax.SAXException 
+     * @throws org.xml.sax.SAXException
      */
     public boolean lockConfig() throws IOException, SAXException {
         StringBuffer rpc = new StringBuffer();
@@ -424,12 +425,13 @@ public class NetconfSession {
             return false;
         return true;
     }
-    
+
     /**
      * Unlocks the candidate configuration.
+     *
      * @return true if successful.
      * @throws java.io.IOException
-     * @throws org.xml.sax.SAXException 
+     * @throws org.xml.sax.SAXException
      */
     public boolean unlockConfig() throws IOException, SAXException {
         StringBuffer rpc = new StringBuffer();
@@ -447,67 +449,65 @@ public class NetconfSession {
             return false;
         return true;
     }
-    
+
     /**
      * Loads the candidate configuration, Configuration should be in XML format.
-     * @param configuration
-     *            Configuration,in XML format, to be loaded. For example,
-     * "&lt;configuration&gt;&lt;system&gt;&lt;services&gt;&lt;ftp/&gt;&lt;
-     * services/&gt;&lt;/system&gt;&lt;/configuration/&gt;"
-     * will load 'ftp' under the 'systems services' hierarchy.  
-     * @param loadType
-     *           You can choose "merge" or "replace" as the loadType.
+     *
+     * @param configuration Configuration,in XML format, to be loaded. For example,
+     *                      "&lt;configuration&gt;&lt;system&gt;&lt;services&gt;&lt;ftp/&gt;&lt;
+     *                      services/&gt;&lt;/system&gt;&lt;/configuration/&gt;"
+     *                      will load 'ftp' under the 'systems services' hierarchy.
+     * @param loadType      You can choose "merge" or "replace" as the loadType.
      * @throws net.juniper.netconf.LoadException
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
      */
-    public void loadXMLConfiguration(String configuration, String loadType) 
+    public void loadXMLConfiguration(String configuration, String loadType)
             throws LoadException, IOException, SAXException {
-        if (loadType == null || (!loadType.equals("merge") && 
+        if (loadType == null || (!loadType.equals("merge") &&
                 !loadType.equals("replace")))
             throw new IllegalArgumentException("'loadType' argument must be " +
                     "merge|replace");
-        loadXMLConfiguration("candidate",configuration,loadType);
+        loadXMLConfiguration("candidate", configuration, loadType);
     }
-    
+
     /**
-     * Loads the candidate configuration, Configuration should be in text/tree 
+     * Loads the candidate configuration, Configuration should be in text/tree
      * format.
-     * @param configuration
-     *            Configuration,in text/tree format, to be loaded. For example,
-     * " system {
-     *     services {
-     *         ftp;
-     *     }
-     *   }"
-     * will load 'ftp' under the 'systems services' hierarchy.  
-     * @param loadType
-     *           You can choose "merge" or "replace" as the loadType.
+     *
+     * @param configuration Configuration,in text/tree format, to be loaded. For example,
+     *                      " system {
+     *                      services {
+     *                      ftp;
+     *                      }
+     *                      }"
+     *                      will load 'ftp' under the 'systems services' hierarchy.
+     * @param loadType      You can choose "merge" or "replace" as the loadType.
      * @throws net.juniper.netconf.LoadException
      * @throws java.io.IOException
-     * @throws org.xml.sax.SAXException 
+     * @throws org.xml.sax.SAXException
      */
-    public void loadTextConfiguration(String configuration, String loadType) 
+    public void loadTextConfiguration(String configuration, String loadType)
             throws LoadException, IOException, SAXException {
-        if (loadType == null || (!loadType.equals("merge") && 
+        if (loadType == null || (!loadType.equals("merge") &&
                 !loadType.equals("replace")))
             throw new IllegalArgumentException("'loadType' argument must be " +
                     "merge|replace");
-        loadTextConfiguration("candidate",configuration,loadType);
+        loadTextConfiguration("candidate", configuration, loadType);
     }
-    
+
     /**
-     * Loads the candidate configuration, Configuration should be in set 
+     * Loads the candidate configuration, Configuration should be in set
      * format.
      * NOTE: This method is applicable only for JUNOS release 11.4 and above.
-     * @param configuration
-     *            Configuration,in set format, to be loaded. For example,
-     * "set system services ftp"
-     * will load 'ftp' under the 'systems services' hierarchy. 
-     * To load multiple set statements, separate them by '\n' character.
+     *
+     * @param configuration Configuration,in set format, to be loaded. For example,
+     *                      "set system services ftp"
+     *                      will load 'ftp' under the 'systems services' hierarchy.
+     *                      To load multiple set statements, separate them by '\n' character.
      * @throws net.juniper.netconf.LoadException
      * @throws java.io.IOException
-     * @throws org.xml.sax.SAXException 
+     * @throws org.xml.sax.SAXException
      */
     public void loadSetConfiguration(String configuration) throws LoadException,
             IOException,
@@ -525,20 +525,19 @@ public class NetconfSession {
         if (hasError() || !isOK())
             throw new LoadException("Load operation returned error");
     }
-    
+
     /**
-     * Loads the candidate configuration from file, 
+     * Loads the candidate configuration from file,
      * configuration should be in XML format.
-     * @param configFile
-     *            Path name of file containing configuration,in xml format,
-     *            to be loaded. 
-     * @param loadType
-     *           You can choose "merge" or "replace" as the loadType.
+     *
+     * @param configFile Path name of file containing configuration,in xml format,
+     *                   to be loaded.
+     * @param loadType   You can choose "merge" or "replace" as the loadType.
      * @throws net.juniper.netconf.LoadException
      * @throws java.io.IOException
      * @throws org.xml.sax.SAXException
      */
-    public void loadXMLFile(String configFile, String loadType) 
+    public void loadXMLFile(String configFile, String loadType)
             throws LoadException, IOException, SAXException {
         String configuration = "";
         try {
@@ -547,26 +546,25 @@ public class NetconfSession {
             throw new FileNotFoundException("The system cannot find the " +
                     "configuration file specified: " + configFile);
         }
-        if (loadType == null || (!loadType.equals("merge") && 
+        if (loadType == null || (!loadType.equals("merge") &&
                 !loadType.equals("replace")))
             throw new IllegalArgumentException("'loadType' argument must be " +
                     "merge|replace");
-        loadXMLConfiguration(configuration,loadType);
+        loadXMLConfiguration(configuration, loadType);
     }
-    
+
     /**
-     * Loads the candidate configuration from file, 
+     * Loads the candidate configuration from file,
      * configuration should be in text/tree format.
-     * @param configFile
-     *            Path name of file containing configuration,in xml format,
-     *            to be loaded. 
-     * @param loadType
-     *           You can choose "merge" or "replace" as the loadType.
+     *
+     * @param configFile Path name of file containing configuration,in xml format,
+     *                   to be loaded.
+     * @param loadType   You can choose "merge" or "replace" as the loadType.
      * @throws net.juniper.netconf.LoadException
      * @throws java.io.IOException
-     * @throws org.xml.sax.SAXException 
+     * @throws org.xml.sax.SAXException
      */
-    public void loadTextFile(String configFile, String loadType) 
+    public void loadTextFile(String configFile, String loadType)
             throws LoadException, IOException, SAXException {
         String configuration = "";
         try {
@@ -575,25 +573,25 @@ public class NetconfSession {
             throw new FileNotFoundException("The system cannot find the " +
                     "configuration file specified: " + configFile);
         }
-        if (loadType == null || (!loadType.equals("merge") && 
+        if (loadType == null || (!loadType.equals("merge") &&
                 !loadType.equals("replace")))
             throw new IllegalArgumentException("'loadType' argument must be " +
                     "merge|replace");
-        loadTextConfiguration(configuration,loadType);
+        loadTextConfiguration(configuration, loadType);
     }
-    
+
     /**
      * Loads the candidate configuration from file,
      * configuration should be in set format.
      * NOTE: This method is applicable only for JUNOS release 11.4 and above.
-     * @param configFile
-     *            Path name of file containing configuration,in set format, 
-     *            to be loaded.
+     *
+     * @param configFile Path name of file containing configuration,in set format,
+     *                   to be loaded.
      * @throws net.juniper.netconf.LoadException
      * @throws java.io.IOException
-     * @throws org.xml.sax.SAXException 
+     * @throws org.xml.sax.SAXException
      */
-    public void loadSetFile(String configFile) throws 
+    public void loadSetFile(String configFile) throws
             IOException, LoadException, SAXException {
         String configuration = "";
         try {
@@ -604,36 +602,35 @@ public class NetconfSession {
         }
         loadSetConfiguration(configuration);
     }
-    
+
     /**
-     * Loads and commits the candidate configuration, Configuration can be in 
+     * Loads and commits the candidate configuration, Configuration can be in
      * text/xml/set format.
-     * @param configFile
-     *            Path name of file containing configuration,in text/xml/set format,
-     *            to be loaded. For example,
-     * " system {
-     *     services {
-     *         ftp;
-     *     }
-     *   }"
-     * will load 'ftp' under the 'systems services' hierarchy.  
-     * OR
-     * "&lt;configuration&gt;&lt;system&gt;&lt;services&gt;&lt;ftp/&gt;&lt;
-     * services/&gt;&lt;/system&gt;&lt;/configuration/&gt;"
-     * will load 'ftp' under the 'systems services' hierarchy.  
-     * OR
-     * "set system services ftp"
-     * will load 'ftp' under the 'systems services' hierarchy.
-     * @param loadType
-     *           You can choose "merge" or "replace" as the loadType.
-     * NOTE: This parameter's value is redundant in case the file contains
-     * configuration in 'set' format.
+     *
+     * @param configFile Path name of file containing configuration,in text/xml/set format,
+     *                   to be loaded. For example,
+     *                   " system {
+     *                   services {
+     *                   ftp;
+     *                   }
+     *                   }"
+     *                   will load 'ftp' under the 'systems services' hierarchy.
+     *                   OR
+     *                   "&lt;configuration&gt;&lt;system&gt;&lt;services&gt;&lt;ftp/&gt;&lt;
+     *                   services/&gt;&lt;/system&gt;&lt;/configuration/&gt;"
+     *                   will load 'ftp' under the 'systems services' hierarchy.
+     *                   OR
+     *                   "set system services ftp"
+     *                   will load 'ftp' under the 'systems services' hierarchy.
+     * @param loadType   You can choose "merge" or "replace" as the loadType.
+     *                   NOTE: This parameter's value is redundant in case the file contains
+     *                   configuration in 'set' format.
      * @throws net.juniper.netconf.LoadException
      * @throws net.juniper.netconf.CommitException
      * @throws java.io.IOException
-     * @throws org.xml.sax.SAXException 
+     * @throws org.xml.sax.SAXException
      */
-    public void commitThisConfiguration(String configFile, String loadType) 
+    public void commitThisConfiguration(String configFile, String loadType)
             throws LoadException, CommitException, IOException, SAXException {
         String configuration = "";
         try {
@@ -658,12 +655,13 @@ public class NetconfSession {
         }
         this.unlockConfig();
     }
-    
+
     /**
      * Commit the candidate configuration.
+     *
      * @throws net.juniper.netconf.CommitException
      * @throws java.io.IOException
-     * @throws org.xml.sax.SAXException 
+     * @throws org.xml.sax.SAXException
      */
     public void commit() throws CommitException, IOException, SAXException {
         StringBuffer rpc = new StringBuffer();
@@ -676,18 +674,18 @@ public class NetconfSession {
         if (hasError() || !isOK())
             throw new CommitException("Commit operation returned error.");
     }
-    
+
     /**
-     * Commit the candidate configuration, temporarily. This is equivalent of 
+     * Commit the candidate configuration, temporarily. This is equivalent of
      * 'commit confirm'
-     * @param seconds
-     *           Time in seconds, after which the previous active configuration 
-     *           is reverted back to.
+     *
+     * @param seconds Time in seconds, after which the previous active configuration
+     *                is reverted back to.
      * @throws net.juniper.netconf.CommitException
      * @throws java.io.IOException
-     * @throws org.xml.sax.SAXException 
-     */ 
-    public void commitConfirm(long seconds) throws CommitException,IOException, 
+     * @throws org.xml.sax.SAXException
+     */
+    public void commitConfirm(long seconds) throws CommitException, IOException,
             SAXException {
         StringBuffer rpc = new StringBuffer();
         rpc.append(RPC_OPEN);
@@ -703,67 +701,70 @@ public class NetconfSession {
             throw new CommitException("Commit operation returned " +
                     "error.");
     }
-    
+
     /**
      * Retrieve the candidate configuration, or part of the configuration.
-     * @param configTree
-     *           configuration hierarchy to be retrieved as the argument.
-     * For example, to get the whole configuration, argument should be 
-     * &lt;configuration&gt;&lt;/configuration&gt;
+     *
+     * @param configTree configuration hierarchy to be retrieved as the argument.
+     *                   For example, to get the whole configuration, argument should be
+     *                   &lt;configuration&gt;&lt;/configuration&gt;
      * @return configuration data as XML object.
      * @throws org.xml.sax.SAXException
      * @throws java.io.IOException
      */
-    public XML getCandidateConfig(String configTree) throws SAXException, 
+    public XML getCandidateConfig(String configTree) throws SAXException,
             IOException {
         return convertToXML(getConfig("candidate", configTree));
     }
-    
+
     /**
      * Retrieve the running configuration, or part of the configuration.
-     * @param configTree
-     *           configuration hierarchy to be retrieved as the argument.
-     * For example, to get the whole configuration, argument should be 
-     * &lt;configuration&gt;&lt;/configuration&gt;
+     *
+     * @param configTree configuration hierarchy to be retrieved as the argument.
+     *                   For example, to get the whole configuration, argument should be
+     *                   &lt;configuration&gt;&lt;/configuration&gt;
      * @return configuration data as XML object.
      * @throws org.xml.sax.SAXException
      * @throws java.io.IOException
      */
-    public XML getRunningConfig(String configTree) throws SAXException, 
+    public XML getRunningConfig(String configTree) throws SAXException,
             IOException {
         return convertToXML(getConfig("running", configTree));
     }
-    
+
     /**
      * Retrieve the whole candidate configuration.
+     *
      * @return configuration data as XML object.
      * @throws org.xml.sax.SAXException
      * @throws java.io.IOException
      */
     public XML getCandidateConfig() throws SAXException, IOException {
-        return convertToXML(getConfig("candidate", 
+        return convertToXML(getConfig("candidate",
                 "<configuration></configuration>"));
     }
-    
+
     /**
      * Retrieve the whole running configuration.
+     *
      * @return configuration data as XML object.
      * @throws org.xml.sax.SAXException
      * @throws java.io.IOException
      */
     public XML getRunningConfig() throws SAXException, IOException {
-        return convertToXML(getConfig("running", 
+        return convertToXML(getConfig("running",
                 "<configuration></configuration>"));
     }
-       
+
     /**
      * Validate the candidate configuration.
+     *
      * @return true if validation successful.
      * @throws java.io.IOException
-     * @throws org.xml.sax.SAXException 
+     * @throws org.xml.sax.SAXException
      */
     public boolean validate() throws IOException, SAXException {
- 
+
         StringBuffer rpc = new StringBuffer();
         rpc.append(RPC_OPEN);
         rpc.append("<validate>");
@@ -779,9 +780,10 @@ public class NetconfSession {
             return false;
         return true;
     }
-    
+
     /**
      * Reboot the device corresponding to the Netconf Session.
+     *
      * @return RPC reply sent by Netconf server.
      * @throws org.xml.sax.SAXException
      * @throws java.io.IOException
@@ -795,18 +797,18 @@ public class NetconfSession {
         String rpcReply = getRpcReply(rpc.toString());
         return rpcReply;
     }
-    
+
     /**
      * Run a cli command.
      * NOTE: The text output is supported for JUNOS 11.4 and later.
-     * @param command
-     *       the cli command to be executed.
+     *
+     * @param command the cli command to be executed.
      * @return result of the command, as a String.
      * @throws java.io.IOException
-     * @throws org.xml.sax.SAXException 
+     * @throws org.xml.sax.SAXException
      */
-    public String runCliCommand(String command) throws IOException, SAXException  {
- 
+    public String runCliCommand(String command) throws IOException, SAXException {
+
         StringBuffer rpc = new StringBuffer();
         rpc.append(RPC_OPEN);
         rpc.append("<command format=\"text\">");
@@ -825,20 +827,20 @@ public class NetconfSession {
         else
             return rpcReply;
     }
-    
+
     /**
      * Run a cli command.
-     * @param command
-     *       the cli command to be executed.
-     * @return result of the command, as a BufferedReader. This is 
-     *         useful if we want continuous stream of output, rather than wait
-     *         for whole output till command execution completes.
+     *
+     * @param command the cli command to be executed.
+     * @return result of the command, as a BufferedReader. This is
+     * useful if we want continuous stream of output, rather than wait
+     * for whole output till command execution completes.
      * @throws org.xml.sax.SAXException
      * @throws java.io.IOException
      */
-    public BufferedReader runCliCommandRunning(String command) throws 
+    public BufferedReader runCliCommandRunning(String command) throws
             SAXException, IOException {
- 
+
         StringBuffer rpc = new StringBuffer();
         rpc.append("<command format=\"text\">");
         rpc.append(command);
@@ -846,22 +848,22 @@ public class NetconfSession {
         BufferedReader br = executeRPCRunning(rpc.toString());
         return br;
     }
-    
+
     /**
-     * This method should be called for load operations to happen in 'private' 
+     * This method should be called for load operations to happen in 'private'
      * mode.
-     * @param mode
-     *       Mode in which to open the configuration.
-     *       Permissible mode(s): "private"
+     *
+     * @param mode Mode in which to open the configuration.
+     *             Permissible mode(s): "private"
      * @throws java.io.IOException
      */
     public void openConfiguration(String mode) throws IOException {
-        
+
         StringBuffer rpc = new StringBuffer();
         rpc.append(RPC_OPEN);
         rpc.append("<open-configuration>");
         if (mode.startsWith("<"))
-            rpc.append(mode); 
+            rpc.append(mode);
         else
             rpc.append("<" + mode + "/>");
         rpc.append("</open-configuration>");
@@ -870,10 +872,11 @@ public class NetconfSession {
         String rpcReply = getRpcReply(rpc.toString());
         lastRpcReply = rpcReply;
     }
-    
+
     /**
      * This method should be called to close a private session, in case its
      * started.
+     *
      * @throws java.io.IOException
      */
     public void closeConfiguration() throws IOException {
@@ -885,13 +888,42 @@ public class NetconfSession {
         String rpcReply = getRpcReply(rpc.toString());
         lastRpcReply = rpcReply;
     }
-    
+
     /**
      * Returns the last RPC reply sent by Netconf server.
+     *
      * @return Last RPC reply, as a string.
      */
     public String getLastRPCReply() {
         return this.lastRpcReply;
     }
 
+
+    private String getResponseString(String end, InputStream is, long timeout) throws IOException {
+        long startTime = System.currentTimeMillis();
+        StringBuilder result = new StringBuilder();
+
+        byte buffer[] = new byte[64];
+        while ((result.indexOf(end) < 0) &&
+                ((System.currentTimeMillis() - startTime) < timeout)) {
+            if (is.available() > 0) {
+                int byteRead = is.read(buffer);
+                result.append(new String(buffer, 0, byteRead));
+            } else {
+                try {
+                    Thread.sleep(THREAD_TIMEOUT);
+                } catch (InterruptedException ex) {
+                    LOG.error("InterruptedException ex=", ex);
+                }
+            }
+        }
+        LOG.debug("Get response string [{}]", result.toString());
+
+        int linePosition = result.indexOf(end);
+        // Remove end line from result
+        if (linePosition >= 0) {
+            result.setLength(linePosition);
+        }
+        return result.toString();
+    }
 }
