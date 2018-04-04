@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * A <code>Device</code> is used to define a Netconf server.
@@ -45,16 +46,18 @@ public class Device {
 
     private final static int DEFAULT_TIMEOUT = 5000;
 
-    private String hostName;
-    private String userName;
+    private final String hostName;
+    private final String userName;
+    private final int port;
+    private final int timeout;
+
     private String password;
     private String helloRpc;
     private String pemKeyFile;
     private boolean connectionOpen;
     private boolean keyBasedAuthentication;
     private Connection netconfConn;
-    private int port;
-    private int timeout;
+
     private DocumentBuilder builder;
     private NetconfSession defaultSession;
 
@@ -66,7 +69,9 @@ public class Device {
      *
      * @throws javax.xml.parsers.ParserConfigurationException
      */
-    public Device() throws ParserConfigurationException {
+    public Device(String hostName, String userName) throws ParserConfigurationException {
+        this.hostName = Objects.requireNonNull(hostName);
+        this.userName = Objects.requireNonNull(userName);
         keyBasedAuthentication = false;
         connectionOpen = false;
         helloRpc = defaultHelloRPC();
@@ -95,8 +100,8 @@ public class Device {
     public Device(String hostName, String userName, String password,
                   String pemKeyFile) throws NetconfException,
             ParserConfigurationException {
-        this.hostName = hostName;
-        this.userName = userName;
+        this.hostName = Objects.requireNonNull(hostName);
+        this.userName = Objects.requireNonNull(userName);
         this.password = password;
         this.pemKeyFile = pemKeyFile;
         if (pemKeyFile == null)
@@ -130,8 +135,8 @@ public class Device {
     public Device(String hostName, String userName, String password,
                   String pemKeyFile, int port)
             throws NetconfException, ParserConfigurationException {
-        this.hostName = hostName;
-        this.userName = userName;
+        this.hostName = Objects.requireNonNull(hostName);
+        this.userName = Objects.requireNonNull(userName);
         this.password = password;
         this.pemKeyFile = pemKeyFile;
         if (pemKeyFile == null)
@@ -165,8 +170,8 @@ public class Device {
     public Device(String hostName, String userName, String password,
                   String pemKeyFile, List<String> capabilities) throws
             NetconfException, ParserConfigurationException {
-        this.hostName = hostName;
-        this.userName = userName;
+        this.hostName = Objects.requireNonNull(hostName);
+        this.userName = Objects.requireNonNull(userName);
         this.password = password;
         this.pemKeyFile = pemKeyFile;
         if (pemKeyFile == null)
@@ -201,8 +206,8 @@ public class Device {
     public Device(String hostName, String userName, String password,
                   String pemKeyFile, int port, List<String> capabilities) throws
             NetconfException, ParserConfigurationException {
-        this.hostName = hostName;
-        this.userName = userName;
+        this.hostName = Objects.requireNonNull(hostName);
+        this.userName = Objects.requireNonNull(userName);
         this.password = password;
         this.pemKeyFile = pemKeyFile;
         if (pemKeyFile == null)
@@ -242,50 +247,10 @@ public class Device {
      * @throws NetconfException
      */
     public void connect() throws NetconfException {
-        if (hostName == null || userName == null || (password == null &&
-                pemKeyFile == null)) {
+        if (password == null && pemKeyFile == null) {
             throw new NetconfException("Login parameters of Device can't be null.");
         }
         defaultSession = this.createNetconfSession();
-    }
-
-    /**
-     * Set the timeout value for connecting to the Device.
-     *
-     * @param timeout timeout in milliseconds.
-     */
-    public void setTimeOut(int timeout) throws NetconfException {
-        if (connectionOpen) {
-            throw new NetconfException("Can't change timeout on a live device."
-                    + "Close the device first.");
-        }
-        this.timeout = timeout;
-    }
-
-    /**
-     * Set the hostname of the Netconf server.
-     *
-     * @param hostName hostname of the Netconf server, to be set.
-     */
-    public void setHostname(String hostName) throws NetconfException {
-        if (connectionOpen) {
-            throw new NetconfException("Can't change hostname on a live device."
-                    + "Close the device first.");
-        }
-        this.hostName = hostName;
-    }
-
-    /**
-     * Set the username of the Netconf server.
-     *
-     * @param userName username of the Netconf server, to be set.
-     */
-    public void setUserName(String userName) throws NetconfException {
-        if (connectionOpen) {
-            throw new NetconfException("Can't change username on a live device."
-                    + "Close the device first.");
-        }
-        this.userName = userName;
     }
 
     /**
@@ -330,19 +295,6 @@ public class Device {
                     + "live device.Close the device first.");
         }
         helloRpc = createHelloRPC(capabilities);
-    }
-
-    /**
-     * Set the port number to establish Netconf session over SSH-2.
-     *
-     * @param port Port number.
-     */
-    public void setPort(int port) throws NetconfException {
-        if (connectionOpen) {
-            throw new NetconfException("Can't change port number on a live " +
-                    "device.Close the device first.");
-        }
-        this.port = port;
     }
 
     /**
