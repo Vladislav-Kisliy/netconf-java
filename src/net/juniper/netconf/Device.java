@@ -59,6 +59,36 @@ public class Device {
 
     /**
      * Prepares a new <code>Device</code> object, with default client
+     * capabilities and user-defined port and timeout which can then be used to perform
+     * netconf operations.
+     * <p>
+     *
+     * @param hostName
+     * @param userName
+     * @param password
+     * @param pemKeyFile
+     * @param port
+     * @param timeout
+     * @throws ParserConfigurationException
+     */
+    public Device(String hostName, String userName, String password,
+                  String pemKeyFile, int port, int timeout)
+            throws ParserConfigurationException {
+        settings = new DeviceSettings(hostName, userName, port, timeout);
+        this.password = password;
+        this.pemKeyFile = pemKeyFile;
+        if (pemKeyFile == null)
+            keyBasedAuthentication = false;
+        else
+            keyBasedAuthentication = true;
+        connectionOpen = false;
+        helloRpc = defaultHelloRPC();
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        builder = factory.newDocumentBuilder();
+    }
+
+    /**
+     * Prepares a new <code>Device</code> object, with default client
      * capabilities and default port 830, which can then be used to perform
      * netconf operations.
      * <p>
@@ -66,12 +96,7 @@ public class Device {
      * @throws javax.xml.parsers.ParserConfigurationException
      */
     public Device(String hostName, String userName) throws ParserConfigurationException {
-        settings = new DeviceSettings(hostName, userName, 830, DEFAULT_TIMEOUT);
-        keyBasedAuthentication = false;
-        connectionOpen = false;
-        helloRpc = defaultHelloRPC();
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        builder = factory.newDocumentBuilder();
+        this(hostName, userName, null, null, 830, DEFAULT_TIMEOUT);
     }
 
 
@@ -93,17 +118,7 @@ public class Device {
     public Device(String hostName, String userName, String password,
                   String pemKeyFile) throws NetconfException,
             ParserConfigurationException {
-        settings = new DeviceSettings(hostName, userName, 830, DEFAULT_TIMEOUT);
-        this.password = password;
-        this.pemKeyFile = pemKeyFile;
-        if (pemKeyFile == null)
-            keyBasedAuthentication = false;
-        else
-            keyBasedAuthentication = true;
-        connectionOpen = false;
-        helloRpc = defaultHelloRPC();
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        builder = factory.newDocumentBuilder();
+        this(hostName, userName, password, pemKeyFile, 830, DEFAULT_TIMEOUT);
     }
 
     /**
@@ -125,17 +140,7 @@ public class Device {
     public Device(String hostName, String userName, String password,
                   String pemKeyFile, int port)
             throws NetconfException, ParserConfigurationException {
-        settings = new DeviceSettings(hostName, userName, port, DEFAULT_TIMEOUT);
-        this.password = password;
-        this.pemKeyFile = pemKeyFile;
-        if (pemKeyFile == null)
-            keyBasedAuthentication = false;
-        else
-            keyBasedAuthentication = true;
-        connectionOpen = false;
-        helloRpc = defaultHelloRPC();
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        builder = factory.newDocumentBuilder();
+        this(hostName, userName, password, pemKeyFile, port, DEFAULT_TIMEOUT);
     }
 
     /**
