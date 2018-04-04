@@ -46,11 +46,7 @@ public class Device {
 
     private final static int DEFAULT_TIMEOUT = 5000;
 
-    private final String hostName;
-    private final String userName;
-    private final int port;
-    private final int timeout;
-
+    private final DeviceSettings settings;
     private String password;
     private String helloRpc;
     private String pemKeyFile;
@@ -70,13 +66,10 @@ public class Device {
      * @throws javax.xml.parsers.ParserConfigurationException
      */
     public Device(String hostName, String userName) throws ParserConfigurationException {
-        this.hostName = Objects.requireNonNull(hostName);
-        this.userName = Objects.requireNonNull(userName);
+        settings = new DeviceSettings(hostName, userName, 830, DEFAULT_TIMEOUT);
         keyBasedAuthentication = false;
         connectionOpen = false;
         helloRpc = defaultHelloRPC();
-        port = 830;
-        timeout = DEFAULT_TIMEOUT;
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         builder = factory.newDocumentBuilder();
     }
@@ -100,8 +93,7 @@ public class Device {
     public Device(String hostName, String userName, String password,
                   String pemKeyFile) throws NetconfException,
             ParserConfigurationException {
-        this.hostName = Objects.requireNonNull(hostName);
-        this.userName = Objects.requireNonNull(userName);
+        settings = new DeviceSettings(hostName, userName, 830, DEFAULT_TIMEOUT);
         this.password = password;
         this.pemKeyFile = pemKeyFile;
         if (pemKeyFile == null)
@@ -110,8 +102,6 @@ public class Device {
             keyBasedAuthentication = true;
         connectionOpen = false;
         helloRpc = defaultHelloRPC();
-        port = 830;
-        timeout = DEFAULT_TIMEOUT;
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         builder = factory.newDocumentBuilder();
     }
@@ -135,8 +125,7 @@ public class Device {
     public Device(String hostName, String userName, String password,
                   String pemKeyFile, int port)
             throws NetconfException, ParserConfigurationException {
-        this.hostName = Objects.requireNonNull(hostName);
-        this.userName = Objects.requireNonNull(userName);
+        settings = new DeviceSettings(hostName, userName, port, DEFAULT_TIMEOUT);
         this.password = password;
         this.pemKeyFile = pemKeyFile;
         if (pemKeyFile == null)
@@ -145,8 +134,6 @@ public class Device {
             keyBasedAuthentication = true;
         connectionOpen = false;
         helloRpc = defaultHelloRPC();
-        this.port = port;
-        timeout = DEFAULT_TIMEOUT;
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         builder = factory.newDocumentBuilder();
     }
@@ -170,8 +157,7 @@ public class Device {
     public Device(String hostName, String userName, String password,
                   String pemKeyFile, List<String> capabilities) throws
             NetconfException, ParserConfigurationException {
-        this.hostName = Objects.requireNonNull(hostName);
-        this.userName = Objects.requireNonNull(userName);
+        settings = new DeviceSettings(hostName, userName, 830, DEFAULT_TIMEOUT);
         this.password = password;
         this.pemKeyFile = pemKeyFile;
         if (pemKeyFile == null)
@@ -180,8 +166,6 @@ public class Device {
             keyBasedAuthentication = true;
         connectionOpen = false;
         helloRpc = createHelloRPC(capabilities);
-        port = 830;
-        timeout = DEFAULT_TIMEOUT;
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         builder = factory.newDocumentBuilder();
     }
@@ -206,8 +190,7 @@ public class Device {
     public Device(String hostName, String userName, String password,
                   String pemKeyFile, int port, List<String> capabilities) throws
             NetconfException, ParserConfigurationException {
-        this.hostName = Objects.requireNonNull(hostName);
-        this.userName = Objects.requireNonNull(userName);
+        settings = new DeviceSettings(hostName, userName, port, DEFAULT_TIMEOUT);
         this.password = password;
         this.pemKeyFile = pemKeyFile;
         if (pemKeyFile == null)
@@ -216,8 +199,6 @@ public class Device {
             keyBasedAuthentication = true;
         connectionOpen = false;
         helloRpc = createHelloRPC(capabilities);
-        this.port = port;
-        timeout = DEFAULT_TIMEOUT;
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         builder = factory.newDocumentBuilder();
     }
@@ -297,13 +278,9 @@ public class Device {
         helloRpc = createHelloRPC(capabilities);
     }
 
-    /**
-     * Get hostname of the Netconf server.
-     *
-     * @return Hostname of the device.
-     */
-    public String gethostName() {
-        return this.hostName;
+
+    public DeviceSettings getSettings() {
+        return settings;
     }
 
     /**
@@ -317,8 +294,8 @@ public class Device {
         NetconfSession netconfSess;
         if (!connectionOpen) {
             try {
-                netconfConn = new Connection(hostName, port);
-                netconfConn.connect(null, timeout, 0);
+                netconfConn = new Connection(settings.getHostName(), settings.getPort());
+                netconfConn.connect(null, settings.getTimeout(), 0);
             } catch (Exception e) {
                 throw new NetconfException(e.getMessage());
             }
@@ -326,11 +303,11 @@ public class Device {
             try {
                 if (keyBasedAuthentication) {
                     File keyFile = new File(pemKeyFile);
-                    isAuthenticated = netconfConn.authenticateWithPublicKey
-                            (userName, keyFile, password);
+                    isAuthenticated = netconfConn
+                            .authenticateWithPublicKey(settings.getUserName(), keyFile, password);
                 } else {
-                    isAuthenticated = netconfConn.authenticateWithPassword
-                            (userName, password);
+                    isAuthenticated = netconfConn
+                            .authenticateWithPassword(settings.getUserName(), password);
                 }
             } catch (IOException e) {
                 throw new NetconfException("Authentication failed:" +
