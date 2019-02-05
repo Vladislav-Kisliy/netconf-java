@@ -58,8 +58,8 @@ public class NetconfSession {
     private final static String TAG_OPEN = "<";
     private final static String TAG_CLOSE = "/>";
 
-    private final static int RESPONSE_TIMEOUT = 20000;
-    private final static int THREAD_TIMEOUT = 400;
+    private final static int RESPONSE_TIMEOUT = 90000;
+    private final static int THREAD_TIMEOUT = 300;
 
 
     private Session netconfSession;
@@ -94,7 +94,7 @@ public class NetconfSession {
     private String getRpcReply(String rpc) throws IOException {
         netconfSession.getStdin().write(rpc.getBytes());
 
-        return getResponseString(PROMPT, stdout, RESPONSE_TIMEOUT);
+        return getResponseString(PROMPT, stdout);
     }
 
 
@@ -915,13 +915,16 @@ public class NetconfSession {
     }
 
 
-    private String getResponseString(String end, InputStream is, long timeout) throws IOException {
+    private String getResponseString(String end, InputStream is) throws IOException {
         long startTime = System.currentTimeMillis();
         StringBuilder result = new StringBuilder();
 
         byte buffer[] = new byte[64];
-        while ((result.indexOf(end) < 0) &&
-                ((System.currentTimeMillis() - startTime) < timeout)) {
+        while (result.indexOf(end) < 0) {
+            if ((System.currentTimeMillis() - startTime) > RESPONSE_TIMEOUT) {
+                LOG.warn("Response timeout exceeded");
+                throw new IOException("Response timeout exceeded");
+            }
             if (is.available() > 0) {
                 int byteRead = is.read(buffer);
                 result.append(new String(buffer, 0, byteRead));
@@ -939,7 +942,11 @@ public class NetconfSession {
         // Remove end line from result
         if (linePosition >= 0) {
             result.setLength(linePosition);
+            LOG.info("Cut responese to length: {}", linePosition);
+        } else {
+            LOG.warn("Incorrect responese length: {}", linePosition);
         }
+
         return result.toString();
     }
 }
