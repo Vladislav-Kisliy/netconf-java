@@ -58,7 +58,7 @@ public class NetconfSession {
     private final static String TAG_OPEN = "<";
     private final static String TAG_CLOSE = "/>";
 
-    private final static int RESPONSE_TIMEOUT = 90000;
+    private final static int RESPONSE_TIMEOUT = 200000;
     private final static int THREAD_TIMEOUT = 300;
 
 
@@ -92,8 +92,8 @@ public class NetconfSession {
     }
 
     private String getRpcReply(String rpc) throws IOException {
+        LOG.info("Running Command: "+rpc);
         netconfSession.getStdin().write(rpc.getBytes());
-
         return getResponseString(PROMPT, stdout);
     }
 
@@ -936,6 +936,7 @@ public class NetconfSession {
                 }
             }
         }
+        LOG.info("Command Response extraction complete.");
         LOG.debug("Get response string [{}]", result.toString());
 
         int linePosition = result.indexOf(end);
