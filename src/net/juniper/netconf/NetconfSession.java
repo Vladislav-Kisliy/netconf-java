@@ -92,7 +92,7 @@ public class NetconfSession {
     }
 
     private String getRpcReply(String rpc) throws IOException {
-        LOG.info("Running Command: "+rpc);
+        LOG.info("Running Command: {}", rpc);
         netconfSession.getStdin().write(rpc.getBytes());
         return getResponseString(PROMPT, stdout);
     }
